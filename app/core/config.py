@@ -1,11 +1,19 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings:
-    EXITO_ENABLED: bool = os.getenv("EXITO_ENABLED", "false").lower() == "true"
+class Settings(BaseSettings):
+    """
+    Configuración de la aplicación.
+    
+    Carga variables de entorno desde .env
+    """
+    exito_enabled: bool = False
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        env_file_encoding="utf-8",
+    )
 
 
 settings = Settings()
