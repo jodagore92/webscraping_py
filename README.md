@@ -40,6 +40,12 @@ ejecutarse **localmente o con Docker**.
     │   └── routes.py
     ├── core/
     │   └── config.py
+    ├── infrastructure/
+    │   └── scraping/
+    │       └── providers/
+    │           ├── base_scraper.py
+    │           ├── exito_scraper.py
+    │           └── mock_scraper.py
     ├── models/
     │   └── product.py
     ├── services/
@@ -50,7 +56,7 @@ ejecutarse **localmente o con Docker**.
     ├── main.py
     Dockerfile
     docker-compose.yml
-    requirements.txt
+    pyproject.toml
     .env
     README.md
 
@@ -66,6 +72,8 @@ ejecutarse **localmente o con Docker**.
 
     docker compose up --build
 
+El servicio estará disponible en:
+-   API: http://localhost:8000
 -   Swagger: http://localhost:8000/docs
 -   Health: http://localhost:8000/health
 
@@ -73,11 +81,13 @@ ejecutarse **localmente o con Docker**.
 
 ## ▶️ Ejecución local
 
-    py -m venv venv
-    venv\Scripts\activate
-    py -m pip install -r requirements.txt
-    playwright install
-    python -m uvicorn app.main:app --reload
+    uv sync
+    uv run playwright install
+    ./run.sh
+
+O manualmente:
+
+    uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ------------------------------------------------------------------------
 
@@ -85,10 +95,11 @@ ejecutarse **localmente o con Docker**.
 
     GET /api/search?product=licuadora
 
-------------------------------------------------------------------------
-
-## 🛠️ Tecnologías
-
+--------------3
+-   FastAPI
+-   Playwright
+-   Docker & Docker Compose
+-   uv (gestor de dependencias)
 -   Python 3.12
 -   FastAPI
 -   Playwright
