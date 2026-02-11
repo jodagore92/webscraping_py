@@ -68,6 +68,19 @@ ejecutarse **localmente o con Docker**.
 
 ------------------------------------------------------------------------
 
+## 📦 Requisitos previos
+
+**Se recomienda usar `uv`** como gestor de dependencias para Python. Es más rápido y confiable que pip.
+
+- **macOS/Linux**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **Windows**: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+
+O instálalo via Homebrew:
+
+    brew install uv
+
+------------------------------------------------------------------------
+
 ## ▶️ Ejecución con Docker
 
     docker compose up --build
@@ -95,15 +108,15 @@ O manualmente:
 
     GET /api/search?product=licuadora
 
---------------3
+------------------------------------------------------------------------
+
+## 🛠️ Tecnologías
+
+-   Python 3.13
 -   FastAPI
 -   Playwright
 -   Docker & Docker Compose
 -   uv (gestor de dependencias)
--   Python 3.12
--   FastAPI
--   Playwright
--   Docker
 -   python-dotenv
 
 ------------------------------------------------------------------------
