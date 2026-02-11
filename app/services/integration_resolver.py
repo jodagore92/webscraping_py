@@ -4,9 +4,8 @@ from app.services.mock_products_provider import MockProductsProvider
 
 
 class IntegrationResolver:
-
     @staticmethod
     def get_exito_provider():
-        if settings.EXITO_ENABLED:
+        if settings.exito_enabled:
             return ExitoScraper()
         return MockProductsProvider()

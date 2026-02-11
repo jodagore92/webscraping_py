@@ -1,11 +1,10 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings:
-    EXITO_ENABLED: bool = os.getenv("EXITO_ENABLED", "false").lower() == "true"
+class Settings(BaseSettings):
+    exito_enabled: bool = False
+
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()

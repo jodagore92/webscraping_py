@@ -1,26 +1,93 @@
+from dataclasses import dataclass
 from playwright.async_api import async_playwright
+from selectolax.parser import HTMLParser
 from app.models.product import Product
 
 
-class ExitoScraper:
+@dataclass
+class ProductData:
+    """Estructura de datos para productos extraídos del HTML"""
 
+    name: str
+    price: str
+    image: str | None
+    url: str | None
+
+
+class ExitoScraper:
     BASE_URL = "https://www.exito.com"
     SEARCH_URL = "https://www.exito.com/s?q={query}"
 
-    async def search_products(self, query: str) -> list[Product]:
-        results = []
+    def _extract_product_data(self, html: str) -> list[ProductData]:
+        """
+        Extrae información de productos del HTML usando selectolax.
 
+        Args:
+            html: Contenido HTML de la página
+
+        Returns:
+            Lista de ProductData con la información extraída
+        """
+        parser = HTMLParser(html)
+        products = []
+
+        # Iterar sobre todos los articles
+        for card in parser.css("article"):
+            # Nombre
+            name_elem = card.css_first("h3")
+            if not name_elem:
+                continue
+            name = name_elem.text(strip=True)
+
+            # Precio
+            price_elem = card.css_first('p[data-fs-container-price-otros="true"]')
+            price = ""
+            if price_elem:
+                price_text = price_elem.text(strip=True)
+                price = price_text.replace("$", "").replace(".", "").strip()
+
+            # Imagen
+            img_elem = card.css_first('button[data-fs-image-zoom-container="true"] img')
+            if not img_elem:
+                img_elem = card.css_first("img[src*='vtexassets.com']")
+
+            image_url = None
+            if img_elem:
+                image_url = img_elem.attrs.get("src")
+
+            # URL
+            link_elem = card.css_first("a")
+            url = None
+            if link_elem:
+                relative_url = link_elem.attrs.get("href")
+                if relative_url:
+                    url = (
+                        f"https://www.exito.com{relative_url}"
+                        if relative_url.startswith("/")
+                        else relative_url
+                    )
+
+            products.append(
+                ProductData(name=name, price=price, image=image_url, url=url)
+            )
+
+        return products
+
+    async def search_products(self, query: str) -> list[Product]:
+        """
+        Busca productos en Éxito y retorna lista de objetos Product.
+
+        Args:
+            query: Término de búsqueda
+
+        Returns:
+            Lista de objetos Product con la información obtenida
+        """
         async with async_playwright() as p:
             browser = await p.chromium.launch(
                 headless=True  # cambiar a False para debug
             )
-            context = await browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/120.0.0.0 Safari/537.36"
-                )
-            )
+            context = await browser.new_context()
             page = await context.new_page()
 
             await page.goto(self.SEARCH_URL.format(query=query), timeout=60000)
@@ -31,55 +98,30 @@ class ExitoScraper:
             await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             await page.wait_for_timeout(3000)
 
-            cards = page.locator("article").filter(
-                has=page.locator("h3")
-            )
+            # Obtener el HTML
+            html = await page.content()
 
-            results = []
+            # Extraer datos usando selectolax
+            products_data = self._extract_product_data(html)
 
-            count = await cards.count()
-
-            for i in range(count):
-                card = cards.nth(i)
-                name = await card.locator("h3").first.inner_text()
-
-                # Precio
-                price_locator = card.locator('p[data-fs-container-price-otros="true"]')
-                if await price_locator.count() > 0:
-                    price_text = await price_locator.inner_text()
-                    price = price_text.replace("$", "").replace(".", "").strip()
-                else:
-                    price = ""
-
-                # Imagen
-                img_locator = card.locator(
-                    'button[data-fs-image-zoom-container="true"] img'
-                )
-
-                if await img_locator.count() == 0:
-                    img_locator = card.locator("img[src*='vtexassets.com']")
-
-                image_url = (
-                    await img_locator.first.get_attribute("src")
-                    if await img_locator.count() > 0
-                    else None
-                )
-
-                relative_url = await card.locator("a").first.get_attribute("href")
-
-                url = (
-                    f"https://www.exito.com{relative_url}"
-                    if relative_url and relative_url.startswith("/")
-                    else relative_url
-                )
-
-                results.append({
-                    "name": name,
-                    "price": price,
-                    "image": image_url,
-                    "url":url
-                })
+            # Convertir a objetos Product
+            products = []
+            for p in products_data:
+                try:
+                    product = Product(
+                        name=p.name,
+                        price=p.price,
+                        url=p.url
+                        if p.url
+                        else self.BASE_URL,  # URL por defecto si es None
+                        image=p.image,
+                    )
+                    products.append(product)
+                except Exception as e:
+                    # Log del error pero continuar procesando
+                    print(f"Error al crear Product: {e}")
+                    continue
 
             await browser.close()
 
-        return results
+        return products
