@@ -2,12 +2,13 @@ from playwright.async_api import async_playwright
 from selectolax.parser import HTMLParser
 from app.models.product import Product
 from app.infrastructure.scraping.providers.base_scraper import BaseScraper, ProductData
+from app.core.logger import logger
 
 
 class ExitoScraper(BaseScraper):
     """
     Scraper para Éxito - E-commerce colombiano.
-    
+
     Implementación concreta del adaptador para integración con Éxito.
     Infrastructure Layer - Adapter Pattern
     """
@@ -128,7 +129,7 @@ class ExitoScraper(BaseScraper):
                     products.append(product)
                 except Exception as e:
                     # Log del error pero continuar procesando
-                    print(f"Error al crear Product: {e}")
+                    logger.error(f"Error al crear Product: {e}")
                     continue
 
             await browser.close()

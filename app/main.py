@@ -5,6 +5,7 @@ from app.api.routes import router as api_router
 from app.core.celery import celery_app
 from app.infrastructure.queue.celery_adapter import CeleryAdapter
 from app.services.queue_factory import QueueFactory
+from app.core.logger import logger
 
 
 @asynccontextmanager
@@ -13,12 +14,12 @@ async def lifespan(app: FastAPI):
     # Startup
     queue_adapter = CeleryAdapter(celery_app)
     QueueFactory.init(queue_adapter)
-    print("✓ QueueFactory inicializado con Celery")
+    logger.info("✓ QueueFactory inicializado con Celery")
 
     yield
 
     # Shutdown
-    print("✓ Aplicación cerrada")
+    logger.info("✓ Aplicación cerrada")
 
 
 app = FastAPI(

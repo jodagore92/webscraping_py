@@ -2,6 +2,7 @@ from typing import Any, Optional
 from celery.result import AsyncResult
 
 from app.infrastructure.queue.queue_provider import QueueProvider
+from app.core.logger import logger
 
 
 class CeleryAdapter(QueueProvider):
@@ -21,6 +22,7 @@ class CeleryAdapter(QueueProvider):
         # Celery espera el nombre completo del módulo donde está la tarea
         full_task_name = f"app.infrastructure.worker.celery_tasks.{task_name}"
         result = self.app.send_task(full_task_name, args=args, kwargs=kwargs)
+        logger.info(f"Tarea encolada: {full_task_name} [job_id: {result.id}]")
         return result.id
 
     async def get_result(self, job_id: str) -> Optional[Any]:

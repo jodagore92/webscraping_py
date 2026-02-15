@@ -66,7 +66,7 @@ graph TD
 app/
 ├── api/                       # Endpoints y dependencias de FastAPI
 ├── application/               # Casos de uso (Lógica de orquestación)
-├── core/                      # Configuración global y Celery App
+├── core/                      # Configuración global, Celery App y Logger
 ├── infrastructure/            # Implementaciones técnicas
 │   ├── queue/                 # Adaptadores para colas de tareas
 │   ├── scraping/              # Scrapers específicos (Playwright)
