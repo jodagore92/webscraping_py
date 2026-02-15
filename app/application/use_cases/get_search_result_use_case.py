@@ -1,4 +1,4 @@
-from typing import Any, Optional, Dict, Union
+from typing import Union
 from fastapi import HTTPException
 from app.infrastructure.queue.queue_provider import QueueProvider
 from app.models.product import Product, SearchStatus, SearchResponse, StoreMetadata
