@@ -10,7 +10,10 @@ El proyecto está diseñado bajo los principios de **Arquitectura Hexagonal**, p
 
 - **Búsqueda Asíncrona**: Las peticiones de búsqueda se encolan para no bloquear la API.
 - **Seguimiento de Estado**: Permite consultar el estado de una búsqueda (`pending`, `processing`, `completed`, `failed`).
-- **Arquitectura de Scrapers**: Soporta múltiples proveedores (Éxito real o Mock para desarrollo).
+- **Arquitectura Multiproveedor**: Soporta múltiples e-commerce simultáneamente:
+    - **Éxito**: Scraper real con Playwright.
+    - **Alkosto**: Scraper real con Playwright (Nuevo ✨).
+    - **Mock**: Proveedor de pruebas para desarrollo rápido.
 - **Desacoplamiento de Workers**: Las tareas están desacopladas del motor de colas (Celery/RQ compatible).
 
 ---
@@ -44,6 +47,7 @@ graph TD
 
     subgraph "Proveedores de Scraping"
         ES[app/infrastructure/scraping/providers/exito_scraper.py]
+        AS[app/infrastructure/scraping/providers/alkosto_scraper.py]
         MS[app/infrastructure/scraping/providers/mock_scraper.py]
     end
 
@@ -55,6 +59,7 @@ graph TD
     Tasks --> SS
     SS --> IR
     IR --> ES
+    IR --> AS
     IR --> MS
 ```
 
@@ -105,8 +110,10 @@ Este proyecto destaca por su desacoplamiento técnico y funcional:
 
 Configurables en el archivo `.env`:
 
-- `EXITO_ENABLED`: (bool) Habilita el scraping real en Éxito. Si es `false`, usa el Mock.
+- `EXITO_ENABLED`: (bool) Habilita el scraping real en Éxito.
+- `ALKOSTO_ENABLED`: (bool) Habilita el scraping real en Alkosto.
 - `REDIS_URL`: URL de conexión para Redis (Broker y Backend de Celery).
+- `LOG_LEVEL`: Nivel de severidad de los logs (DEBUG, INFO, WARNING, ERROR).
 
 ---
 
