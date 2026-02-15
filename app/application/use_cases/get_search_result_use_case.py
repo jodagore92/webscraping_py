@@ -1,4 +1,5 @@
 from typing import Any, Optional, Dict, Union
+from fastapi import HTTPException
 from app.infrastructure.queue.queue_provider import QueueProvider
 from app.models.product import Product, SearchStatus, SearchResponse, StoreMetadata
 
@@ -16,15 +17,19 @@ class GetSearchResultUseCase:
         """
         Consulta la infraestructura para retornar el estado o el resultado.
         """
-        result = await self.queue_provider.get_result(job_id)
         status = await self.queue_provider.get_status(job_id)
+
+        if status == "unknown":
+            raise HTTPException(
+                status_code=404, detail=f"No se encontró el job_id {job_id}."
+            )
+
+        result = await self.queue_provider.get_result(job_id)
 
         if result is None:
             message = "La búsqueda aún está procesando"
             if status == "failed":
                 message = "La búsqueda ha fallado. Revisa los logs del servidor."
-            elif status == "unknown":
-                message = "No se encontró el job_id especificado."
 
             return SearchStatus(
                 job_id=job_id,
@@ -36,7 +41,5 @@ class GetSearchResultUseCase:
         return SearchResponse(
             data=[Product(**product) for product in result["data"]],
             metadata=[StoreMetadata(**m) for m in result.get("metadata", [])],
-            total_execution_time_seconds=result.get(
-                "total_execution_time_seconds", 0.0
-            ),
+            total_time=result.get("total_time", 0.0),
         )

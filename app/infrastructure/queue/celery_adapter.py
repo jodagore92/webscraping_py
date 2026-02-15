@@ -41,6 +41,13 @@ class CeleryAdapter(QueueProvider):
         """Obtiene el estado de una tarea"""
         async_result = AsyncResult(job_id, app=self.app)
 
+        # En Celery, si el job_id no existe en el backend de resultados (expire time o nunca existió),
+        # el estado devuelto es PENDING por defecto.
+        # Verificamos si la tarea realmente existe o ha sido guardada.
+        backend = self.app.backend
+        if backend and not backend.get(backend.get_key_for_task(job_id)):
+            return "unknown"
+
         state = async_result.state
 
         # Mapear estados de Celery a nuestros estados

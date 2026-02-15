@@ -62,5 +62,5 @@ class SearchService:
         return {
             "data": [p.model_dump(mode="json") for p in products],
             "metadata": [m.model_dump(mode="json") for m in metadata],
-            "total_execution_time_seconds": round(end_time - start_time, 2),
+            "total_time": round(end_time - start_time, 2),
         }

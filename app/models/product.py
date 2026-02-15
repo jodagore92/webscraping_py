@@ -31,4 +31,4 @@ class SearchResponse(BaseModel):
 
     data: List[Product]
     metadata: List[StoreMetadata] = []
-    total_execution_time_seconds: float = 0.0
+    total_time: float = 0.0
