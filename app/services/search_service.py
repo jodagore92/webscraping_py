@@ -1,15 +1,21 @@
 from typing import List, Optional, Callable
+import asyncio
 from app.models.product import Product
 from app.services.integration_resolver import IntegrationResolver
 
 
 class SearchService:
     def __init__(self):
-        self.provider = IntegrationResolver.get_exito_provider()
+        self.providers = IntegrationResolver.get_active_providers()
 
     async def search(self, product: str) -> List[Product]:
-        """Búsqueda pura que retorna objetos de dominio"""
-        return await self.provider.search_products(product)
+        """Búsqueda pura que retorna objetos de dominio combinados"""
+        tasks = [provider.search_products(product) for provider in self.providers]
+        results = await asyncio.gather(*tasks)
+
+        # Aplanar la lista de listas
+        flat_results = [item for sublist in results for item in sublist]
+        return flat_results
 
     async def search_and_format(
         self, product: str, on_progress: Optional[Callable[[int, int], None]] = None

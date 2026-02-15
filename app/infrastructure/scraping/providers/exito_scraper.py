@@ -50,10 +50,11 @@ class ExitoScraper(BaseScraper):
 
             # Precio
             price_elem = card.css_first('p[data-fs-container-price-otros="true"]')
-            price = ""
+            price = 0.0
             if price_elem:
                 price_text = price_elem.text(strip=True)
                 price = price_text.replace("$", "").replace(".", "").strip()
+                price = float(price) if price.isdigit() else 0.0
 
             # Imagen
             img_elem = card.css_first('button[data-fs-image-zoom-container="true"] img')
@@ -77,7 +78,9 @@ class ExitoScraper(BaseScraper):
                     )
 
             products.append(
-                ProductData(name=name, price=price, image=image_url, url=url)
+                ProductData(
+                    name=name, store="Éxito", price=price, image=image_url, url=url
+                )
             )
 
         return products
@@ -120,6 +123,7 @@ class ExitoScraper(BaseScraper):
                 try:
                     product = Product(
                         name=p.name,
+                        store=p.store,
                         price=p.price,
                         url=p.url
                         if p.url

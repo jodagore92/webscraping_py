@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     """
 
     exito_enabled: bool = False
+    alkosto_enabled: bool = False
     redis_url: str = "redis://localhost:6379/0"
     log_level: str = "INFO"
 

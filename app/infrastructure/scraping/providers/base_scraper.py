@@ -8,7 +8,8 @@ class ProductData:
     """Estructura de datos para productos extraídos del HTML"""
 
     name: str
-    price: str
+    store: str
+    price: float
     image: str | None
     url: str | None
 
@@ -23,7 +24,7 @@ class BaseScraper(ABC):
     - Cada scraper debe implementar _build_search_url()
 
     Pattern: Template Method + Abstract Base Class
-    
+
     Infrastructure Layer - Adapter Pattern
     """
 

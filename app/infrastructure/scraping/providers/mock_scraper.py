@@ -6,7 +6,7 @@ from app.infrastructure.scraping.providers.base_scraper import BaseScraper, Prod
 class MockScraper(BaseScraper):
     """
     Mock Scraper para testing y desarrollo.
-    
+
     Retorna datos de prueba sin realizar scraping real.
     Infrastructure Layer - Mock Implementation
     """
@@ -50,7 +50,8 @@ class MockScraper(BaseScraper):
         return [
             Product(
                 name=f"{query.capitalize()} Demo {i}",
-                price="100000",
+                store="MockStore",
+                price=100000.0,
                 url=f"{self.BASE_URL}/product/{i}",
                 image=f"{self.BASE_URL}/images/product-{i}.jpg",
             )

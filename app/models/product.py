@@ -4,7 +4,8 @@ from typing import Optional, List
 
 class Product(BaseModel):
     name: str
-    price: str
+    store: str
+    price: float
     url: HttpUrl
     image: Optional[HttpUrl] = None
 
