@@ -24,13 +24,13 @@ graph TD
     end
 
     subgraph "Capa de Aplicación"
-        UC_Search[search_products_use_case.py]
-        UC_GetResult[get_search_result_use_case.py]
+        UC_Search[app/application/use_cases/search_products_use_case.py]
+        UC_GetResult[app/application/use_cases/get_search_result_use_case.py]
     end
 
     subgraph "Capa de Infraestructura (Colas)"
-        QP[queue_provider.py]
-        CA[celery_adapter.py]
+        QP[app/infrastructure/queue/queue_provider.py]
+        CA[app/infrastructure/queue/celery_adapter.py]
     end
 
     subgraph "Worker de Fondo"
@@ -43,8 +43,8 @@ graph TD
     end
 
     subgraph "Proveedores de Scraping"
-        ES[exito_scraper.py]
-        MS[mock_scraper.py]
+        ES[app/infrastructure/scraping/providers/exito_scraper.py]
+        MS[app/infrastructure/scraping/providers/mock_scraper.py]
     end
 
     API --> UC_Search
@@ -62,19 +62,42 @@ graph TD
 
 ## 📁 Estructura del Proyecto
 
+El proyecto sigue los principios de la **Arquitectura Hexagonal**, organizando el código en capas para facilitar su mantenimiento y testabilidad:
+
 ```text
 app/
-├── api/                       # Endpoints y dependencias de FastAPI
-├── application/               # Casos de uso (Lógica de orquestación)
-├── core/                      # Configuración global, Celery App y Logger
-├── infrastructure/            # Implementaciones técnicas
-│   ├── queue/                 # Adaptadores para colas de tareas
-│   ├── scraping/              # Scrapers específicos (Playwright)
-│   └── worker/                # Wrappers para ejecutar tareas en fondo
-├── models/                    # Modelos de dominio (Pydantic)
-├── services/                  # Servicios de dominio y utilidades
-└── main.py                    # Punto de entrada de la aplicación
+├── api/                       # CAPA DE PRESENTACIÓN (Interfaces de entrada)
+│   ├── routes.py              # Definición de endpoints FastAPI
+│   └── dependencies.py        # Inyección de dependencias para casos de uso
+├── application/               # CAPA DE APLICACIÓN (Lógica de orquestación)
+│   └── use_cases/             # Implementación de casos de uso específicos
+├── core/                      # CAPA CORE (Configuraciones transversales)
+│   ├── config.py              # Variables de entorno y ajustes globales
+│   ├── celery.py              # Instancia de la aplicación Celery
+│   └── logger.py              # Configuración centralizada de logs
+├── infrastructure/            # CAPA DE INFRAESTRUCTURA (Detalles técnicos)
+│   ├── queue/                 # Adaptadores para sistemas de colas (Celery)
+│   ├── scraping/              # Implementación de scrapers con Playwright
+│   └── worker/                # Wrappers para ejecución de tareas asíncronas
+├── models/                    # CAPA DE DOMINIO (Entidades y tipos)
+│   └── product.py             # Modelos de datos del dominio
+├── services/                  # CAPA DE SERVICIOS (Lógica de negocio pura)
+│   ├── search_service.py      # Orquestador de búsqueda multicanal
+│   ├── integration_resolver.py # Factory para proveedores de scraping
+│   └── queue_factory.py       # Factory para despacho de tareas a colas
+└── main.py                    # Punto de entrada de la aplicación FastAPI
 ```
+
+---
+
+## 🏗️ Organización y Patrones
+
+Este proyecto destaca por su desacoplamiento técnico y funcional:
+
+- **Arquitectura Hexagonal**: La lógica de negocio (`services`) no conoce los detalles de cómo se ejecutan las tareas (`celery`) ni de qué sistema de mensajería se usa.
+- **Wrapper Pattern**: Las tareas de Celery en `infrastructure/worker` son simples envoltorios que delegan al `SearchService`. Esto permite cambiar el motor de tareas (ej. a Redis Queue o subprocesos) sin tocar el código de negocio.
+- **Factory Pattern**: Se utilizan factories (`QueueFactory`, `IntegrationResolver`) para inicializar proveedores de forma dinámica según la configuración del entorno.
+- **Inyección de Dependencias**: Gracias a FastAPI, los casos de uso reciben sus dependencias de forma limpia, facilitando el testing con Mocks.
 
 ---
 
@@ -130,33 +153,23 @@ O utiliza el script automatizado (solo para la API):
 
 ## 🛠️ Endpoints Principales
 
-1. **POST** `/api/search?product=licuadora`: Encola una búsqueda. Retorna un `job_id`.
-2. **GET** `/api/search/{job_id}`: Consulta el estado o el resultado final de la búsqueda.
+1. **POST** `/api/search?product=licuadora`: Encola una búsqueda asíncrona. Retorna un `job_id`.
+2. **GET** `/api/search/{job_id}`: Consulta el estado (`PENDING`, `PROCESSING`, `SUCCESS`) y el resultado final.
 
-O manualmente:
-
-    uv run python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-------------------------------------------------------------------------
-
-## 📌 Endpoint
-
-    GET /api/search?product=licuadora
-
-------------------------------------------------------------------------
+---
 
 ## 🛠️ Tecnologías
 
--   Python 3.13
--   FastAPI
--   Playwright
--   Docker & Docker Compose
--   uv (gestor de dependencias)
--   python-dotenv
+- **Python 3.13** (Gestión con `uv`)
+- **FastAPI** (Web Framework)
+- **Celery & Redis** (Fila de tareas y backend de resultados)
+- **Playwright** (Navegación automatizada para scraping)
+- **Selectolax** (Parsers de HTML rápidos)
+- **Docker & Docker Compose** (Containerización)
 
-------------------------------------------------------------------------
+---
 
 ## 👤 Autor
 
-José Gomez\
-Arquitecto / Backend Developer
+**José Gomez**  
+*Arquitecto / Backend Developer*
