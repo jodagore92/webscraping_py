@@ -100,6 +100,7 @@ class AlkostoScraper(BaseScraper):
         """
         Realiza la búsqueda en Alkosto y retorna lista de Productos.
         """
+        logger.info(f"[{self.__class__.__name__}] Inicio de búsqueda para: {query}")
         search_url = self._build_search_url(query)
         logger.info(f"Buscando en Alkosto: {search_url}")
 
@@ -120,9 +121,10 @@ class AlkostoScraper(BaseScraper):
                 await page.wait_for_selector("li.product__item", timeout=30000)
                 html = await page.content()
 
+                logger.info(f"[{self.__class__.__name__}] Organizando datos extraídos...")
                 product_datas = self._extract_product_data(html)
 
-                return [
+                results = [
                     Product(
                         name=data.name,
                         store=data.store,
@@ -133,6 +135,10 @@ class AlkostoScraper(BaseScraper):
                     for data in product_datas
                     if data.url  # Validar que al menos tenga URL
                 ]
+                logger.info(
+                    f"[{self.__class__.__name__}] Finalizado. Encontrados: {len(results)}"
+                )
+                return results
 
             except Exception as e:
                 logger.error(f"Error raspando Alkosto: {str(e)}")

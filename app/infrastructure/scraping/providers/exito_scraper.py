@@ -95,6 +95,7 @@ class ExitoScraper(BaseScraper):
         Returns:
             Lista de objetos Product con la información obtenida
         """
+        logger.info(f"[{self.__class__.__name__}] Inicio de búsqueda para: {query}")
         async with async_playwright() as p:
             browser = await p.chromium.launch(
                 headless=True  # cambiar a False para debug
@@ -114,6 +115,7 @@ class ExitoScraper(BaseScraper):
             # Obtener el HTML
             html = await page.content()
 
+            logger.info(f"[{self.__class__.__name__}] Organizando datos extraídos...")
             # Extraer datos usando selectolax
             products_data = self._extract_product_data(html)
 
@@ -138,4 +140,7 @@ class ExitoScraper(BaseScraper):
 
             await browser.close()
 
+        logger.info(
+            f"[{self.__class__.__name__}] Finalizado. Encontrados: {len(products)}"
+        )
         return products

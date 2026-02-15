@@ -21,6 +21,7 @@ services:
       - .env
     environment:
       - UV_COMPILE_BYTECODE=1
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
     depends_on:
@@ -34,12 +35,13 @@ services:
       - .env
     environment:
       - UV_COMPILE_BYTECODE=1
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
     depends_on:
       redis:
         condition: service_healthy
-    command: ["uv", "run", "celery", "-A", "app.core.celery:celery_app", "worker", "--loglevel=info"]
+    command: ["python", "-m", "celery", "-A", "app.core.celery:celery_app", "worker", "--loglevel=info"]
 
 volumes:
   redis_data:

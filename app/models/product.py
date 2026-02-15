@@ -17,9 +17,18 @@ class SearchStatus(BaseModel):
     status: str
     message: str
     data: None = None
+    metadata: Optional[List[dict]] = None
+
+
+class StoreMetadata(BaseModel):
+    store_name: str
+    count: int
+    execution_time_seconds: float
 
 
 class SearchResponse(BaseModel):
     """Respuesta de búsqueda completada con lista de productos"""
 
     data: List[Product]
+    metadata: List[StoreMetadata] = []
+    total_execution_time_seconds: float = 0.0

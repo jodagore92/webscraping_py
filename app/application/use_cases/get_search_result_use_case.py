@@ -1,6 +1,6 @@
 from typing import Any, Optional, Dict, Union
 from app.infrastructure.queue.queue_provider import QueueProvider
-from app.models.product import Product, SearchStatus, SearchResponse
+from app.models.product import Product, SearchStatus, SearchResponse, StoreMetadata
 
 
 class GetSearchResultUseCase:
@@ -33,4 +33,10 @@ class GetSearchResultUseCase:
             )
 
         # Retornar resultados transformados a modelos de dominio/respuesta
-        return SearchResponse(data=[Product(**product) for product in result])
+        return SearchResponse(
+            data=[Product(**product) for product in result["data"]],
+            metadata=[StoreMetadata(**m) for m in result.get("metadata", [])],
+            total_execution_time_seconds=result.get(
+                "total_execution_time_seconds", 0.0
+            ),
+        )
