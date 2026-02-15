@@ -1,4 +1,17 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: webscraping-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
   api:
     build: .
     container_name: webscraping-api
@@ -10,3 +23,23 @@ services:
       - UV_COMPILE_BYTECODE=1
     volumes:
       - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    container_name: webscraping-worker
+    env_file:
+      - .env
+    environment:
+      - UV_COMPILE_BYTECODE=1
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["uv", "run", "celery", "-A", "app.core.celery:celery_app", "worker", "--loglevel=info"]
+
+volumes:
+  redis_data:

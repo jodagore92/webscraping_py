@@ -1,15 +1,38 @@
-from fastapi import APIRouter, Query
-from typing import List
+from fastapi import APIRouter, Query, Depends
+from typing import Union
 
-from app.models.product import Product
-from app.services.search_service import SearchService
+from app.models.product import SearchStatus, SearchResponse
+from app.api.dependencies import (
+    get_search_products_use_case,
+    get_search_result_use_case,
+)
+from app.application.use_cases.search_products_use_case import SearchProductsUseCase
+from app.application.use_cases.get_search_result_use_case import GetSearchResultUseCase
 
 router = APIRouter(tags=["Search"])
-service = SearchService()
 
 
-@router.get("/search", response_model=List[Product])
+@router.post("/search")
 async def search_product(
-    product: str = Query(..., min_length=2)
+    product: str = Query(..., min_length=2),
+    use_case: SearchProductsUseCase = Depends(get_search_products_use_case),
 ):
-    return await service.search(product)
+    """
+    Encola una búsqueda de productos via Use Case
+    """
+    job_id = await use_case.execute(product)
+    return {
+        "job_id": job_id,
+        "status_url": f"/api/search/{job_id}",
+        "message": "Búsqueda encolada. Consulta el resultado con el job_id",
+    }
+
+
+@router.get("/search/{job_id}", response_model=Union[SearchResponse, SearchStatus])
+async def get_search_result(
+    job_id: str, use_case: GetSearchResultUseCase = Depends(get_search_result_use_case)
+):
+    """
+    Obtiene el resultado de una búsqueda encolada via Use Case
+    """
+    return await use_case.execute(job_id)
