@@ -1,102 +1,137 @@
 # 🕷️ Web Scraping Éxito -- Demo Backend
 
-Backend demo en **Python** que expone una API REST para buscar productos
-en un e-commerce (Éxito), utilizando **Playwright** para web scraping.
+Backend demo en **Python** que expone una API REST para buscar productos en un e-commerce (Éxito), utilizando **Playwright** para web scraping y **Celery** para procesamiento asíncrono.
 
-El proyecto está diseñado con una **arquitectura limpia**, soporta
-**integraciones habilitables por variables de entorno**, y puede
-ejecutarse **localmente o con Docker**.
+El proyecto está diseñado bajo los principios de **Arquitectura Hexagonal**, permitiendo el desacoplamiento entre la lógica de negocio y las herramientas técnicas (infraestructura).
 
-------------------------------------------------------------------------
+---
 
 ## 🚀 Funcionalidad
 
--   Endpoint `GET /api/search`
--   Recibe el nombre de un producto (ej: `licuadora`)
--   Retorna los **primeros 3 resultados**
--   Soporta:
-    -   🔌 Integración real (scraping)
-    -   🧪 Datos mock (sin scraping)
--   Selección de integración controlada por `.env`
+- **Búsqueda Asíncrona**: Las peticiones de búsqueda se encolan para no bloquear la API.
+- **Seguimiento de Estado**: Permite consultar el estado de una búsqueda (`pending`, `processing`, `completed`, `failed`).
+- **Arquitectura de Scrapers**: Soporta múltiples proveedores (Éxito real o Mock para desarrollo).
+- **Desacoplamiento de Workers**: Las tareas están desacopladas del motor de colas (Celery/RQ compatible).
 
-------------------------------------------------------------------------
+---
 
-## 🧠 Arquitectura (alto nivel)
+## 🧠 Arquitectura
 
-    API (FastAPI)
-       ↓
-    SearchService
-       ↓
-    IntegrationResolver
-       ↓
-    [ ExitoScraper | MockProductsProvider ]
+```mermaid
+graph TD
+    subgraph "Capa de Presentación"
+        API[app/api/routes.py]
+    end
 
-------------------------------------------------------------------------
+    subgraph "Capa de Aplicación"
+        UC_Search[search_products_use_case.py]
+        UC_GetResult[get_search_result_use_case.py]
+    end
 
-## 📁 Estructura del proyecto
+    subgraph "Capa de Infraestructura (Colas)"
+        QP[queue_provider.py]
+        CA[celery_adapter.py]
+    end
 
-    app/
-    ├── api/
-    │   └── routes.py
-    ├── core/
-    │   └── config.py
-    ├── infrastructure/
-    │   └── scraping/
-    │       └── providers/
-    │           ├── base_scraper.py
-    │           ├── exito_scraper.py
-    │           └── mock_scraper.py
-    ├── models/
-    │   └── product.py
-    ├── services/
-    │   ├── exito_scraper.py
-    │   ├── mock_products_provider.py
-    │   ├── integration_resolver.py
-    │   └── search_service.py
-    ├── main.py
-    Dockerfile
-    docker-compose.yml
-    pyproject.toml
-    .env
-    README.md
+    subgraph "Worker de Fondo"
+        Tasks[app/infrastructure/worker/celery_tasks.py]
+    end
 
-------------------------------------------------------------------------
+    subgraph "Capa de Servicios"
+        SS[app/services/search_service.py]
+        IR[app/services/integration_resolver.py]
+    end
 
-## ⚙️ Variables de entorno
+    subgraph "Proveedores de Scraping"
+        ES[exito_scraper.py]
+        MS[mock_scraper.py]
+    end
 
-    EXITO_ENABLED=false
+    API --> UC_Search
+    API --> UC_GetResult
+    UC_Search --> QP
+    QP --> CA
+    CA -.->|Encolar| Tasks
+    Tasks --> SS
+    SS --> IR
+    IR --> ES
+    IR --> MS
+```
 
-------------------------------------------------------------------------
+---
 
-## 📦 Requisitos previos
+## 📁 Estructura del Proyecto
 
-**Se recomienda usar `uv`** como gestor de dependencias para Python. Es más rápido y confiable que pip.
+```text
+app/
+├── api/                       # Endpoints y dependencias de FastAPI
+├── application/               # Casos de uso (Lógica de orquestación)
+├── core/                      # Configuración global y Celery App
+├── infrastructure/            # Implementaciones técnicas
+│   ├── queue/                 # Adaptadores para colas de tareas
+│   ├── scraping/              # Scrapers específicos (Playwright)
+│   └── worker/                # Wrappers para ejecutar tareas en fondo
+├── models/                    # Modelos de dominio (Pydantic)
+├── services/                  # Servicios de dominio y utilidades
+└── main.py                    # Punto de entrada de la aplicación
+```
 
-- **macOS/Linux**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- **Windows**: `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+---
 
-O instálalo via Homebrew:
+## ⚙️ Variables de Entorno
 
-    brew install uv
+Configurables en el archivo `.env`:
 
-------------------------------------------------------------------------
+- `EXITO_ENABLED`: (bool) Habilita el scraping real en Éxito. Si es `false`, usa el Mock.
+- `REDIS_URL`: URL de conexión para Redis (Broker y Backend de Celery).
 
-## ▶️ Ejecución con Docker
+---
 
-    docker compose up --build
+## 📦 Gestión de Dependencias
 
-El servicio estará disponible en:
--   API: http://localhost:8000
--   Swagger: http://localhost:8000/docs
--   Health: http://localhost:8000/health
+Este proyecto utiliza **[uv](https://astral.sh/uv/)** para una gestión de dependencias rápida y determinista.
 
-------------------------------------------------------------------------
+---
 
-## ▶️ Ejecución local
+## ▶️ Ejecución con Docker (Recomendado)
 
-    uv sync
-    uv run playwright install
-    ./run.sh
+La forma más sencilla de levantar todo el stack (API, Worker, Redis):
+
+```bash
+docker compose up --build
+```
+
+- **API**: http://localhost:8000
+- **Swagger Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+---
+
+## ▶️ Ejecución Local
+
+1. Instalar dependencias:
+   ```bash
+   uv sync
+   uv run playwright install --with-deps
+   ```
+
+2. Levantar servicios:
+   Se requieren tres terminales o procesos:
+   - **Redis**: Debe estar corriendo en el puerto 6379.
+   - **API**: `uv run python -m uvicorn app.main:app --reload`
+   - **Worker**: `uv run celery -A app.core.celery:celery_app worker --loglevel=info`
+
+O utiliza el script automatizado (solo para la API):
+```bash
+./run.sh
+```
+
+---
+
+## 🛠️ Endpoints Principales
+
+1. **POST** `/api/search?product=licuadora`: Encola una búsqueda. Retorna un `job_id`.
+2. **GET** `/api/search/{job_id}`: Consulta el estado o el resultado final de la búsqueda.
 
 O manualmente:
 
