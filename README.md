@@ -1,20 +1,24 @@
-# 🕷️ Web Scraping Éxito -- Demo Backend
+# 🕷️ Web Scraping Pro -- Multi-Tenant Backend
 
-Backend demo en **Python** que expone una API REST para buscar productos en un e-commerce (Éxito), utilizando **Playwright** para web scraping y **Celery** para procesamiento asíncrono.
+Backend profesional en **Python 3.13** que expone una API REST para buscar productos en múltiples e-commerce simultáneamente (Éxito, Alkosto), utilizando **Playwright** para web scraping, **Celery** para procesamiento asíncrono y **MongoDB** para persistencia de usuarios y resultados.
 
-El proyecto está diseñado bajo los principios de **Arquitectura Hexagonal**, permitiendo el desacoplamiento entre la lógica de negocio y las herramientas técnicas (infraestructura).
+El proyecto está diseñado bajo los principios de **Arquitectura Hexagonal (Puertos y Adaptadores)**, permitiendo un desacoplamiento total entre la lógica de negocio y la infraestructura (Bases de datos, Mensajería, Scrapers).
 
 ---
 
-## 🚀 Funcionalidad
+## 🚀 Funcionalidades Actuales
 
-- **Búsqueda Asíncrona**: Las peticiones de búsqueda se encolan para no bloquear la API.
-- **Seguimiento de Estado**: Permite consultar el estado de una búsqueda (`pending`, `processing`, `completed`, `failed`).
-- **Arquitectura Multiproveedor**: Soporta múltiples e-commerce simultáneamente:
-    - **Éxito**: Scraper real con Playwright.
-    - **Alkosto**: Scraper real con Playwright (Nuevo ✨).
-    - **Mock**: Proveedor de pruebas para desarrollo rápido.
-- **Desacoplamiento de Workers**: Las tareas están desacopladas del motor de colas (Celery/RQ compatible).
+- **Sistema de Usuarios y Seguridad**: 
+    - Registro e inicio de sesión con **JWT (OAuth2)**.
+    - Contraseñas cifradas con **Bcrypt**.
+    - **Roles de Usuario**: Soporte para `ADMIN` y `GENERAL`.
+- **Búsqueda Multi-Proveedor**: 
+    - Scrapers reales optimizados para **Éxito** y **Alkosto** (concurrencia mediante `asyncio`).
+    - Búsquedas asíncronas vía **Celery** para evitar bloqueos.
+- **Persistencia y Consultas**: 
+    - Almacenamiento distribuido en **MongoDB 8.0**.
+    - **Historial de Búsquedas**: Cada usuario tiene acceso a su propio historial con soporte para **Paginación**.
+- **Configuración Robusta**: Variables de entorno estrictamente validadas con **Pydantic Settings** (Zero Hardcoded Defaults).
 
 ---
 
@@ -22,161 +26,123 @@ El proyecto está diseñado bajo los principios de **Arquitectura Hexagonal**, p
 
 ```mermaid
 graph TD
-    subgraph "Capa de Presentación"
-        API[app/api/routes.py]
+    subgraph "Capa de Presentación (Input)"
+        Auth_API[app/api/auth_routes.py]
+        User_API[app/api/user_routes.py]
+        Search_API[app/api/routes.py]
     end
 
-    subgraph "Capa de Aplicación"
-        UC_Search[app/application/use_cases/search_products_use_case.py]
-        UC_GetResult[app/application/use_cases/get_search_result_use_case.py]
+    subgraph "Capa de Aplicación (Casos de Uso)"
+        UC_Auth[Login/Register Use Cases]
+        UC_Search[Search Use Cases]
+        UC_History[Get History Use Case]
     end
 
-    subgraph "Capa de Infraestructura (Colas)"
-        QP[app/infrastructure/queue/queue_provider.py]
-        CA[app/infrastructure/queue/celery_adapter.py]
+    subgraph "Capa de Infraestructura (Adaptadores)"
+        DB_Mongo[app/infrastructure/database/mongo_adapter.py]
+        Queue_Celery[app/infrastructure/queue/celery_adapter.py]
+        Scrap_Playwright[app/infrastructure/scraping/providers/]
     end
 
-    subgraph "Worker de Fondo"
-        Tasks[app/infrastructure/worker/celery_tasks.py]
+    subgraph "Worker Asíncrono"
+        Worker[app/infrastructure/worker/celery_tasks.py]
     end
 
-    subgraph "Capa de Servicios"
-        SS[app/services/search_service.py]
-        IR[app/services/integration_resolver.py]
-    end
-
-    subgraph "Proveedores de Scraping"
-        ES[app/infrastructure/scraping/providers/exito_scraper.py]
-        AS[app/infrastructure/scraping/providers/alkosto_scraper.py]
-        MS[app/infrastructure/scraping/providers/mock_scraper.py]
-    end
-
-    API --> UC_Search
-    API --> UC_GetResult
-    UC_Search --> QP
-    QP --> CA
-    CA -.->|Encolar| Tasks
-    Tasks --> SS
-    SS --> IR
-    IR --> ES
-    IR --> AS
-    IR --> MS
+    Search_API --> UC_Search
+    UC_Search --> Queue_Celery
+    Queue_Celery -.->|Publish| Worker
+    Worker --> UC_Search
+    UC_Search --> DB_Mongo
+    Auth_API --> UC_Auth
+    UC_Auth --> DB_Mongo
+    User_API --> UC_History
+    UC_History --> DB_Mongo
 ```
 
 ---
 
 ## 📁 Estructura del Proyecto
 
-El proyecto sigue los principios de la **Arquitectura Hexagonal**, organizando el código en capas para facilitar su mantenimiento y testabilidad:
-
 ```text
 app/
-├── api/                       # CAPA DE PRESENTACIÓN (Interfaces de entrada)
-│   ├── routes.py              # Definición de endpoints FastAPI
-│   └── dependencies.py        # Inyección de dependencias para casos de uso
-├── application/               # CAPA DE APLICACIÓN (Lógica de orquestación)
-│   └── use_cases/             # Implementación de casos de uso específicos
-├── core/                      # CAPA CORE (Configuraciones transversales)
-│   ├── config.py              # Variables de entorno y ajustes globales
-│   ├── celery.py              # Instancia de la aplicación Celery
-│   └── logger.py              # Configuración centralizada de logs
-├── infrastructure/            # CAPA DE INFRAESTRUCTURA (Detalles técnicos)
-│   ├── queue/                 # Adaptadores para sistemas de colas (Celery)
-│   ├── scraping/              # Implementación de scrapers con Playwright
-│   └── worker/                # Wrappers para ejecución de tareas asíncronas
-├── models/                    # CAPA DE DOMINIO (Entidades y tipos)
-│   └── product.py             # Modelos de datos del dominio
-├── services/                  # CAPA DE SERVICIOS (Lógica de negocio pura)
-│   ├── search_service.py      # Orquestador de búsqueda multicanal
-│   ├── integration_resolver.py # Factory para proveedores de scraping
-│   └── queue_factory.py       # Factory para despacho de tareas a colas
-└── main.py                    # Punto de entrada de la aplicación FastAPI
+├── api/                       # Interfaces REST (FastAPI)
+│   ├── auth_routes.py         # Registro y Login
+│   ├── user_routes.py         # Perfil e Historial
+│   └── routes.py              # Endpoints de búsqueda
+├── application/               # Lógica de Orquestación (Casos de Uso)
+├── core/                      # Configuración Global, Celery, Seguridad, Logs
+├── infrastructure/            # Adaptadores Técnicos
+│   ├── database/              # Persistencia (MongoDB Adapter)
+│   ├── queue/                 # Mensajería (Celery Adapter)
+│   ├── scraping/              # Implementación de Scrapers (Playwright)
+│   └── worker/                # Tareas de Celery
+├── models/                    # Entidades de Dominio (Pydantic/User/Product)
+├── services/                  # Lógica de Negocio (SearchService, Factories)
+└── main.py                    # Punto de entrada FastAPI
 ```
 
 ---
 
-## 🏗️ Organización y Patrones
+## ⚙️ Configuración (.env)
 
-Este proyecto destaca por su desacoplamiento técnico y funcional:
+El proyecto utiliza un sistema de configuración estricto. **No se permiten valores por defecto quemados** en el código. Para iniciar, debes copiar el template:
 
-- **Arquitectura Hexagonal**: La lógica de negocio (`services`) no conoce los detalles de cómo se ejecutan las tareas (`celery`) ni de qué sistema de mensajería se usa.
-- **Wrapper Pattern**: Las tareas de Celery en `infrastructure/worker` son simples envoltorios que delegan al `SearchService`. Esto permite cambiar el motor de tareas (ej. a Redis Queue o subprocesos) sin tocar el código de negocio.
-- **Factory Pattern**: Se utilizan factories (`QueueFactory`, `IntegrationResolver`) para inicializar proveedores de forma dinámica según la configuración del entorno.
-- **Inyección de Dependencias**: Gracias a FastAPI, los casos de uso reciben sus dependencias de forma limpia, facilitando el testing con Mocks.
+```bash
+cp .env.template .env
+```
 
----
-
-## ⚙️ Variables de Entorno
-
-Configurables en el archivo `.env`:
-
-- `EXITO_ENABLED`: (bool) Habilita el scraping real en Éxito.
-- `ALKOSTO_ENABLED`: (bool) Habilita el scraping real en Alkosto.
-- `REDIS_URL`: URL de conexión para Redis (Broker y Backend de Celery).
-- `LOG_LEVEL`: Nivel de severidad de los logs (DEBUG, INFO, WARNING, ERROR).
-
----
-
-## 📦 Gestión de Dependencias
-
-Este proyecto utiliza **[uv](https://astral.sh/uv/)** para una gestión de dependencias rápida y determinista.
+### Variables requeridas:
+- `REDIS_URL`: Broker de Celery (ej. `redis://redis:6379/0`).
+- `MONGO_URL`: Conexión a MongoDB (ej. `mongodb://admin:pass@mongodb:27017`).
+- `SECRET_KEY`: Clave para firmar los JWT.
+- `EXITO_ENABLED / ALKOSTO_ENABLED`: Activan/Desactivan scrapers específicos.
 
 ---
 
 ## ▶️ Ejecución con Docker (Recomendado)
 
-La forma más sencilla de levantar todo el stack (API, Worker, Redis):
+Levanta todo el stack (API, Worker, MongoDB 8.0, Redis 7.0):
 
 ```bash
 docker compose up --build
 ```
 
 - **API**: http://localhost:8000
-- **Swagger Docs**: http://localhost:8000/docs
+- **Documentación Interactiva (Swagger)**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/health
 
 ---
 
-## ▶️ Ejecución Local
+## 🛠️ Flujo de Uso (Endpoints)
 
-1. Instalar dependencias:
-   ```bash
-   uv sync
-   uv run playwright install --with-deps
-   ```
+### 1. Autenticación
+- **POST** `/api/auth/register`: Crea un nuevo usuario.
+- **POST** `/api/auth/login`: Obtiene el `access_token` (JWT).
 
-2. Levantar servicios:
-   Se requieren tres terminales o procesos:
-   - **Redis**: Debe estar corriendo en el puerto 6379.
-   - **API**: `uv run python -m uvicorn app.main:app --reload`
-   - **Worker**: `uv run celery -A app.core.celery:celery_app worker --loglevel=info`
+### 2. Búsqueda (Requiere Token)
+- **POST** `/api/search?product=televisor`: Encola búsqueda asíncrona. Retorna `job_id`.
+- **GET** `/api/search/{job_id}`: Consulta resultados del scraping.
 
-O utiliza el script automatizado (solo para la API):
-```bash
-./run.sh
-```
-
----
-
-## 🛠️ Endpoints Principales
-
-1. **POST** `/api/search?product=licuadora`: Encola una búsqueda asíncrona. Retorna un `job_id`.
-2. **GET** `/api/search/{job_id}`: Consulta el estado (`PENDING`, `PROCESSING`, `SUCCESS`) y el resultado final.
+### 3. Usuario & Historial (Requiere Token)
+- **GET** `/api/users/me/history?limit=10&skip=0`: Consulta tus búsquedas pasadas de forma paginada.
 
 ---
 
 ## 🛠️ Tecnologías
 
-- **Python 3.13** (Gestión con `uv`)
-- **FastAPI** (Web Framework)
-- **Celery & Redis** (Fila de tareas y backend de resultados)
-- **Playwright** (Navegación automatizada para scraping)
-- **Selectolax** (Parsers de HTML rápidos)
-- **Docker & Docker Compose** (Containerización)
+- **Python 3.13** + **uv**
+- **FastAPI**: API Web de alto rendimiento.
+- **MongoDB 8.0**: Almacenamiento NoSQL.
+- **Celery & Redis**: Gestión de tareas distribuidas.
+- **Playwright**: Scraping de SPAs modernas.
+- **Jose / Passlib**: Seguridad JWT y hashing de contraseñas.
 
 ---
 
-## 👤 Autor
+## 👤 Autores
 
 **José Gomez**  
+*Arquitecto / Backend Developer*
+
+**Alejandro Ruiz**  
 *Arquitecto / Backend Developer*
