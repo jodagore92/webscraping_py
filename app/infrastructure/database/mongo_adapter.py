@@ -17,6 +17,15 @@ class MongoAdapter(DatabaseProvider):
         self.users_collection = "users"
 
     async def connect(self):
+        # Si el cliente ya existe, verificamos si su loop está cerrado
+        if self.client is not None:
+            try:
+                # Intentamos obtener el loop del cliente
+                self.client.get_io_loop()
+            except RuntimeError:
+                # Si el loop está cerrado o no disponible, forzamos reconexión
+                self.client = None
+
         if self.client is None:
             logger.info(f"Conectando a MongoDB en: {settings.mongo_url}")
             self.client = AsyncIOMotorClient(settings.mongo_url)

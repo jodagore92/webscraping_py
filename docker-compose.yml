@@ -18,8 +18,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     volumes:
       - mongo_data:/data/db
 
@@ -32,8 +32,10 @@ services:
       - .env
     environment:
       - UV_COMPILE_BYTECODE=1
-      - REDIS_URL=redis://redis:6379/0
-      - MONGO_URL=mongodb://admin:adminpassword@mongodb:27017
+      - REDIS_URL=${REDIS_URL}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+      - SECRET_KEY=${SECRET_KEY}
     volumes:
       - .:/app
     depends_on:
@@ -49,8 +51,9 @@ services:
       - .env
     environment:
       - UV_COMPILE_BYTECODE=1
-      - REDIS_URL=redis://redis:6379/0
-      - MONGO_URL=mongodb://admin:adminpassword@mongodb:27017
+      - REDIS_URL=${REDIS_URL}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
     volumes:
       - .:/app
     depends_on:

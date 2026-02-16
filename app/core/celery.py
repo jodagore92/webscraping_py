@@ -7,8 +7,8 @@ settings = Settings()
 # Crear instancia de Celery
 celery_app = Celery(
     "webscraping_py",
-    broker=settings.redis_url or "redis://localhost:6379/0",
-    backend=settings.redis_url or "redis://localhost:6379/0",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
 )
 
 # Configuración de Celery
