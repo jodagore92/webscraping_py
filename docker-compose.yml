@@ -12,6 +12,17 @@ services:
     volumes:
       - redis_data:/data
 
+  mongodb:
+    image: mongo:8.0
+    container_name: webscraping-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+    volumes:
+      - mongo_data:/data/db
+
   api:
     build: .
     container_name: webscraping-api
@@ -22,11 +33,14 @@ services:
     environment:
       - UV_COMPILE_BYTECODE=1
       - REDIS_URL=redis://redis:6379/0
+      - MONGO_URL=mongodb://admin:adminpassword@mongodb:27017
     volumes:
       - .:/app
     depends_on:
       redis:
         condition: service_healthy
+      mongodb:
+        condition: service_started
 
   worker:
     build: .
@@ -36,12 +50,16 @@ services:
     environment:
       - UV_COMPILE_BYTECODE=1
       - REDIS_URL=redis://redis:6379/0
+      - MONGO_URL=mongodb://admin:adminpassword@mongodb:27017
     volumes:
       - .:/app
     depends_on:
       redis:
         condition: service_healthy
+      mongodb:
+        condition: service_started
     command: ["python", "-m", "celery", "-A", "app.core.celery:celery_app", "worker", "--loglevel=info"]
 
 volumes:
   redis_data:
+  mongo_data:
