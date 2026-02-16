@@ -1,12 +1,14 @@
+import asyncio
 from typing import List
 from app.models.product import Product
 from app.infrastructure.scraping.providers.base_scraper import BaseScraper, ProductData
+from app.core.logger import logger
 
 
 class MockScraper(BaseScraper):
     """
     Mock Scraper para testing y desarrollo.
-    
+
     Retorna datos de prueba sin realizar scraping real.
     Infrastructure Layer - Mock Implementation
     """
@@ -47,12 +49,21 @@ class MockScraper(BaseScraper):
         Returns:
             Lista de productos mock
         """
-        return [
+        logger.info(f"[{self.__class__.__name__}] Inicio de búsqueda para: {query}")
+        await asyncio.sleep(0.5)  # Simular latencia
+
+        logger.info(f"[{self.__class__.__name__}] Organizando datos extraídos...")
+        results = [
             Product(
                 name=f"{query.capitalize()} Demo {i}",
-                price="100000",
+                store="MockStore",
+                price=100000.0,
                 url=f"{self.BASE_URL}/product/{i}",
                 image=f"{self.BASE_URL}/images/product-{i}.jpg",
             )
             for i in range(1, 4)
         ]
+        logger.info(
+            f"[{self.__class__.__name__}] Finalizado. Encontrados: {len(results)}"
+        )
+        return results

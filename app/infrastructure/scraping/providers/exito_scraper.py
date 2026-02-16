@@ -2,12 +2,13 @@ from playwright.async_api import async_playwright
 from selectolax.parser import HTMLParser
 from app.models.product import Product
 from app.infrastructure.scraping.providers.base_scraper import BaseScraper, ProductData
+from app.core.logger import logger
 
 
 class ExitoScraper(BaseScraper):
     """
     Scraper para Éxito - E-commerce colombiano.
-    
+
     Implementación concreta del adaptador para integración con Éxito.
     Infrastructure Layer - Adapter Pattern
     """
@@ -49,10 +50,11 @@ class ExitoScraper(BaseScraper):
 
             # Precio
             price_elem = card.css_first('p[data-fs-container-price-otros="true"]')
-            price = ""
+            price = 0.0
             if price_elem:
                 price_text = price_elem.text(strip=True)
                 price = price_text.replace("$", "").replace(".", "").strip()
+                price = float(price) if price.isdigit() else 0.0
 
             # Imagen
             img_elem = card.css_first('button[data-fs-image-zoom-container="true"] img')
@@ -76,7 +78,9 @@ class ExitoScraper(BaseScraper):
                     )
 
             products.append(
-                ProductData(name=name, price=price, image=image_url, url=url)
+                ProductData(
+                    name=name, store="Éxito", price=price, image=image_url, url=url
+                )
             )
 
         return products
@@ -91,6 +95,7 @@ class ExitoScraper(BaseScraper):
         Returns:
             Lista de objetos Product con la información obtenida
         """
+        logger.info(f"[{self.__class__.__name__}] Inicio de búsqueda para: {query}")
         async with async_playwright() as p:
             browser = await p.chromium.launch(
                 headless=True  # cambiar a False para debug
@@ -110,6 +115,7 @@ class ExitoScraper(BaseScraper):
             # Obtener el HTML
             html = await page.content()
 
+            logger.info(f"[{self.__class__.__name__}] Organizando datos extraídos...")
             # Extraer datos usando selectolax
             products_data = self._extract_product_data(html)
 
@@ -119,6 +125,7 @@ class ExitoScraper(BaseScraper):
                 try:
                     product = Product(
                         name=p.name,
+                        store=p.store,
                         price=p.price,
                         url=p.url
                         if p.url
@@ -128,9 +135,12 @@ class ExitoScraper(BaseScraper):
                     products.append(product)
                 except Exception as e:
                     # Log del error pero continuar procesando
-                    print(f"Error al crear Product: {e}")
+                    logger.error(f"Error al crear Product: {e}")
                     continue
 
             await browser.close()
 
+        logger.info(
+            f"[{self.__class__.__name__}] Finalizado. Encontrados: {len(products)}"
+        )
         return products
