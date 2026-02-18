@@ -1,12 +1,41 @@
-# 🕷️ Web Scraping Pro -- Multi-Tenant Backend
+# 🕷️ Web Scraping Pro -- Monorepo Fullstack
 
-Backend profesional en **Python 3.13** que expone una API REST para buscar productos en múltiples e-commerce simultáneamente (Éxito, Alkosto), utilizando **Playwright** para web scraping, **Celery** para procesamiento asíncrono y **MongoDB** para persistencia de usuarios y resultados.
-
-El proyecto está diseñado bajo los principios de **Arquitectura Hexagonal (Puertos y Adaptadores)**, permitiendo un desacoplamiento total entre la lógica de negocio y la infraestructura (Bases de datos, Mensajería, Scrapers).
+Proyecto moderno que combina un backend de alto rendimiento en **Python 3.13** y un frontend reactivo en **Vue 3**. Permite buscar productos en múltiples e-commerce simultáneamente (Éxito, Alkosto).
 
 ---
 
-## 🚀 Funcionalidades Actuales
+## 📁 Estructura del Monorepo
+
+```text
+webscraping_py/
+├── backend/                  # API REST (FastAPI) y Scrapers
+│   ├── app/                  # Lógica hexagonal (Domain/Application/Infrastructure)
+│   ├── tests/                # Pruebas unitarias e integración
+│   └── Dockerfile            # Configuración de contenedor backend
+├── frontend/                 # Interfaz de Usuario (Vue 3 + Tailwind CSS v4)
+│   ├── src/                  # Código fuente (Vite)
+│   └── Dockerfile            # Configuración de contenedor frontend
+├── docker-compose.yml        # Orquestación de toda la plataforma
+└── .env                      # Configuración de entorno compartida
+```
+
+---
+
+## 🚀 Inicio Rápido con Docker
+
+Para levantar toda la plataforma (Frontend, Backend, MongoDB, Redis, Celery Worker):
+
+```bash
+docker-compose up --build
+```
+
+- **Frontend**: [http://localhost:5173](http://localhost:5173)
+- **API Backend**: [http://localhost:8000](http://localhost:8000)
+- **Documentación API**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+## ⚙️ Configuración del Backend (.env)
 
 - **Sistema de Usuarios y Seguridad**: 
     - Registro e inicio de sesión con **JWT (OAuth2)**.

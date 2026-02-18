@@ -11,8 +11,6 @@ class UserRole(str, Enum):
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str
-    role: UserRole = UserRole.GENERAL
-    is_active: bool = True
 
 
 class UserCreate(UserBase):
@@ -22,12 +20,16 @@ class UserCreate(UserBase):
 class UserInDB(UserBase):
     id: Optional[str] = Field(None, alias="_id")
     hashed_password: str
+    role: UserRole = UserRole.GENERAL
+    is_active: bool = True
 
     model_config = {"populate_by_name": True}
 
 
 class UserResponse(UserBase):
     id: str
+    role: UserRole
+    is_active: bool
 
     model_config = {"from_attributes": True}
 

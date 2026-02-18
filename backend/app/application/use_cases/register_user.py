@@ -22,6 +22,10 @@ class RegisterUserUseCase:
         password = user_dict.pop("password")
         user_dict["hashed_password"] = get_password_hash(password)
 
+        # Campos fijos por defecto
+        user_dict["role"] = UserRole.GENERAL
+        user_dict["is_active"] = True
+
         # Guardar en BD
         user_id = await self.db.save_user(user_dict)
         return user_id

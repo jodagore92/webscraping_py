@@ -17,7 +17,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 # Instalar navegadores de Playwright
-RUN uv run playwright install --with-deps
+RUN uv run playwright install --with-deps --only-shell
 
 # Copiar el código
 COPY . .
