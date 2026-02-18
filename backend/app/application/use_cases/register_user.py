@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from app.infrastructure.database.database_provider import DatabaseProvider
-from app.models.user import UserCreate, UserInDB, UserRole
+from app.models.user import UserCreate, UserRole
 from app.core.security import get_password_hash
 
 

@@ -26,9 +26,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Web Scraping Éxito Demo",
-    description="API demo para scraping de productos del Éxito usando Playwright y colas con Celery",
-    version="1.0.0",
+    title="Sistema comparador de precios",
+    description="API scraping de productos en ecommerce",
+    version="2.0.0",
     lifespan=lifespan,
 )
 

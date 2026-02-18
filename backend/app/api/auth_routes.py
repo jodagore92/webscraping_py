@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from app.application.use_cases.register_user import RegisterUserUseCase
 from app.application.use_cases.login_user import LoginUserUseCase
-from app.models.user import UserCreate, Token, UserResponse
+from app.models.user import UserCreate, Token
 from app.api.dependencies import get_register_user_use_case, get_login_user_use_case
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

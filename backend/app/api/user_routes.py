@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from typing import List
 from app.application.use_cases.get_history import GetSearchHistoryUseCase
 from app.api.dependencies import get_history_use_case, get_current_user
 from app.models.user import UserInDB
