@@ -16,3 +16,8 @@ build
 .idea
 .vscode
 *.log
+node_modules
+frontend/node_modules
+dist
+dist-ssr
+*.local
